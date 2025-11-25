@@ -1,449 +1,567 @@
-// app.js - Lógica de la interfaz de usuario
+// app.js - Lógica mejorada de la interfaz
 
-// Variables globales
-let scraper;
-let currentWords = [];
-
-// Elementos del DOM
-const urlInput = document.getElementById('url-input');
-const scrapeBtn = document.getElementById('scrape-btn');
-const loading = document.getElementById('loading');
-const loadingText = document.getElementById('loading-text');
-const messageDiv = document.getElementById('message');
-const wordCountSpan = document.getElementById('word-count');
-const charCountSpan = document.getElementById('char-count');
-const pagesCountSpan = document.getElementById('pages-count');
-const linksCountSpan = document.getElementById('links-count');
-const currentUrlSpan = document.getElementById('current-url');
-const scrapeTimeSpan = document.getElementById('scrape-time');
-const uniquePercentSpan = document.getElementById('unique-percent');
-const efficiencySpan = document.getElementById('efficiency');
-const wordsList = document.getElementById('words-list');
-const frequentWordsList = document.getElementById('frequent-words');
-const siteStructureList = document.getElementById('site-structure');
-const emptyWords = document.getElementById('empty-words');
-const emptyFreq = document.getElementById('empty-freq');
-const emptyStructure = document.getElementById('empty-structure');
-const sortAscBtn = document.getElementById('sort-asc');
-const sortDescBtn = document.getElementById('sort-desc');
-const sortLengthAscBtn = document.getElementById('sort-length-asc');
-const sortLengthDescBtn = document.getElementById('sort-length-desc');
-const filterShortBtn = document.getElementById('filter-short');
-const filterLongBtn = document.getElementById('filter-long');
-const clearWordsBtn = document.getElementById('clear-words');
-const exportBtn = document.getElementById('export-btn');
-const progressBar = document.getElementById('progress-bar');
-const progressText = document.getElementById('progress-text');
-const progressPercent = document.getElementById('progress-percent');
-const progressStepsContainer = document.getElementById('progress-steps');
-const settingsToggle = document.getElementById('settings-toggle');
-const settingsContent = document.getElementById('settings-content');
-const settingsChevron = document.getElementById('settings-chevron');
-const exportSeparator = document.getElementById('export-separator');
-
-// Configuración
-const depthSelect = document.getElementById('depth-select');
-const pageLimitInput = document.getElementById('page-limit');
-const minLengthInput = document.getElementById('min-length');
-const filterCommonCheckbox = document.getElementById('filter-common');
-const includeExternalCheckbox = document.getElementById('include-external');
-const timeoutInput = document.getElementById('timeout');
-
-// Inicialización
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
-
-function initializeApp() {
-    scraper = new AdvancedScraper();
-    setupEventListeners();
-    updateStats();
-}
-
-function setupEventListeners() {
-    // Botón de scraping
-    scrapeBtn.addEventListener('click', startScraping);
-    
-    // Configuración avanzada
-    settingsToggle.addEventListener('click', toggleAdvancedSettings);
-    
-    // Controles de ordenamiento y filtrado
-    sortAscBtn.addEventListener('click', () => sortWords('asc'));
-    sortDescBtn.addEventListener('click', () => sortWords('desc'));
-    sortLengthAscBtn.addEventListener('click', () => sortWords('length-asc'));
-    sortLengthDescBtn.addEventListener('click', () => sortWords('length-desc'));
-    filterShortBtn.addEventListener('click', filterShortWords);
-    filterLongBtn.addEventListener('click', filterLongWords);
-    clearWordsBtn.addEventListener('click', clearAllWords);
-    exportBtn.addEventListener('click', exportWords);
-    
-    // Enter en el input de URL
-    urlInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            startScraping();
-        }
-    });
-}
-
-// Función para mostrar mensajes
-function showMessage(text, type = 'info') {
-    const icon = type === 'success' ? 'fa-check-circle' : 
-                 type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-    
-    messageDiv.innerHTML = `
-        <div class="message ${type}">
-            <i class="fas ${icon}"></i>
-            <span>${text}</span>
-        </div>
-    `;
-    
-    setTimeout(() => {
-        messageDiv.innerHTML = '';
-    }, 5000);
-}
-
-// Función para actualizar la barra de progreso
-function updateProgress(percent, text) {
-    const progressBar = document.getElementById('progress-bar');
-    const progressText = document.getElementById('progress-text');
-    const progressPercent = document.getElementById('progress-percent');
-    
-    if (progressBar && progressText && progressPercent) {
-        progressBar.style.width = `${percent}%`;
-        progressPercent.textContent = `${Math.round(percent)}%`;
-        progressText.textContent = text;
+class LexiScraperApp {
+    constructor() {
+        this.scraper = new AdvancedScraper();
+        this.currentWords = [];
+        this.isProcessing = false;
+        
+        this.initializeElements();
+        this.setupEventListeners();
+        this.updateUI();
     }
-}
 
-// Función para agregar pasos de progreso
-function setupProgressSteps(steps) {
-    const progressStepsContainer = document.getElementById('progress-steps');
-    if (!progressStepsContainer) return;
-    
-    progressStepsContainer.innerHTML = '';
-    
-    steps.forEach((step, index) => {
-        const stepElement = document.createElement('div');
-        stepElement.className = 'progress-step';
+    initializeElements() {
+        // Elementos de entrada
+        this.urlInput = document.getElementById('url-input');
+        this.scrapeBtn = document.getElementById('scrape-btn');
+        this.addToListBtn = document.getElementById('add-to-list-btn');
+        this.fileInput = document.getElementById('file-input');
+        this.processFileBtn = document.getElementById('process-file-btn');
         
-        const icon = document.createElement('div');
-        icon.className = 'step-icon';
-        icon.innerHTML = '<i class="fas fa-clock"></i>';
+        // Elementos de UI
+        this.loading = document.getElementById('loading');
+        this.loadingText = document.getElementById('loading-text');
+        this.messageDiv = document.getElementById('message');
+        this.wordsList = document.getElementById('words-list');
+        this.sourcesList = document.getElementById('sources-list');
         
-        const text = document.createElement('span');
-        text.textContent = step;
+        // Estadísticas
+        this.wordCountSpan = document.getElementById('word-count');
+        this.sourcesCountSpan = document.getElementById('sources-count');
+        this.totalWordsSpan = document.getElementById('total-words');
+        this.charCountSpan = document.getElementById('char-count');
+        this.wordsBadge = document.getElementById('words-badge');
+        this.totalTimeSpan = document.getElementById('total-time');
+        this.efficiencySpan = document.getElementById('efficiency');
+        this.lastSourceSpan = document.getElementById('last-source');
         
-        stepElement.appendChild(icon);
-        stepElement.appendChild(text);
-        progressStepsContainer.appendChild(stepElement);
-    });
-}
+        // Controles
+        this.sortAscBtn = document.getElementById('sort-asc');
+        this.sortDescBtn = document.getElementById('sort-desc');
+        this.sortLengthAscBtn = document.getElementById('sort-length-asc');
+        this.sortLengthDescBtn = document.getElementById('sort-length-desc');
+        this.clearWordsBtn = document.getElementById('clear-words');
+        this.exportBtn = document.getElementById('export-btn');
+        this.searchInput = document.getElementById('search-words');
+        this.clearSearchBtn = document.getElementById('clear-search');
+        
+        // Configuración
+        this.depthSelect = document.getElementById('depth-select');
+        this.pageLimitInput = document.getElementById('page-limit');
+        this.minLengthInput = document.getElementById('min-length');
+        this.filterCommonCheckbox = document.getElementById('filter-common');
+        this.exportSeparator = document.getElementById('export-separator');
+        
+        // Progreso
+        this.progressBar = document.getElementById('progress-bar');
+        this.progressText = document.getElementById('progress-text');
+        this.progressPercent = document.getElementById('progress-percent');
+        this.progressStepsContainer = document.getElementById('progress-steps');
+    }
 
-// Función para actualizar un paso de progreso
-function updateProgressStep(stepIndex, status) {
-    const steps = document.querySelectorAll('.progress-step');
-    if (steps[stepIndex]) {
-        const icon = steps[stepIndex].querySelector('.step-icon');
-        if (icon) {
-            icon.className = 'step-icon';
+    setupEventListeners() {
+        // Scraping
+        this.scrapeBtn.addEventListener('click', () => this.startScraping());
+        this.addToListBtn.addEventListener('click', () => this.addToExistingList());
+        
+        // Archivos
+        this.processFileBtn.addEventListener('click', () => this.processFile());
+        this.fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.showMessage(`Archivo seleccionado: ${e.target.files[0].name}`, 'info');
+            }
+        });
+        
+        // Controles
+        this.sortAscBtn.addEventListener('click', () => this.sortWords('asc'));
+        this.sortDescBtn.addEventListener('click', () => this.sortWords('desc'));
+        this.sortLengthAscBtn.addEventListener('click', () => this.sortWords('length-asc'));
+        this.sortLengthDescBtn.addEventListener('click', () => this.sortWords('length-desc'));
+        this.clearWordsBtn.addEventListener('click', () => this.clearAll());
+        this.exportBtn.addEventListener('click', () => this.exportWords());
+        
+        // Búsqueda
+        this.searchInput.addEventListener('input', () => this.filterWords());
+        this.clearSearchBtn.addEventListener('click', () => {
+            this.searchInput.value = '';
+            this.filterWords();
+        });
+        
+        // Enter en inputs
+        this.urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.startScraping();
+        });
+        
+        // Configuración avanzada
+        document.getElementById('settings-toggle').addEventListener('click', () => this.toggleAdvancedSettings());
+        
+        // Tests
+        document.getElementById('run-tests-btn').addEventListener('click', () => this.runTests());
+        document.getElementById('reset-all-btn').addEventListener('click', () => this.resetAll());
+    }
+
+    async startScraping() {
+        if (this.isProcessing) {
+            this.showMessage('Ya hay un proceso en ejecución', 'error');
+            return;
+        }
+
+        const url = this.urlInput.value.trim();
+        if (!url) {
+            this.showMessage('Por favor, ingresa una URL válida', 'error');
+            return;
+        }
+
+        try {
+            new URL(url);
+        } catch (e) {
+            this.showMessage('La URL ingresada no es válida', 'error');
+            return;
+        }
+
+        this.isProcessing = true;
+        this.setLoading(true, 'Iniciando análisis...');
+
+        try {
+            const depth = parseInt(this.depthSelect.value);
+            const pageLimit = parseInt(this.pageLimitInput.value);
+            const minLength = parseInt(this.minLengthInput.value);
+            const filterCommon = this.filterCommonCheckbox.checked;
+
+            // Configurar progreso
+            this.setupProgressSteps([
+                'Conectando con el servidor',
+                'Descargando contenido principal',
+                'Extrayendo enlaces internos',
+                'Analizando páginas secundarias',
+                'Procesando texto y palabras',
+                'Generando estadísticas'
+            ]);
+
+            await this.updateProgress(10, 'Preparando análisis...');
+
+            const result = await this.scraper.scrapeWebsite(url, depth, pageLimit, minLength, filterCommon);
             
-            if (status === 'completed') {
-                icon.innerHTML = '<i class="fas fa-check"></i>';
-                icon.classList.add('completed');
-            } else if (status === 'active') {
-                icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                icon.classList.add('active');
-            } else {
-                icon.innerHTML = '<i class="fas fa-clock"></i>';
+            await this.updateProgress(100, 'Análisis completado');
+            
+            this.updateUIWithResults(result);
+            this.showMessage(`Scraping completado. ${result.stats.wordCount} palabras únicas encontradas.`, 'success');
+
+        } catch (error) {
+            console.error('Error en scraping:', error);
+            this.showMessage(`Error: ${error.message}`, 'error');
+        } finally {
+            this.setLoading(false);
+            this.isProcessing = false;
+        }
+    }
+
+    async addToExistingList() {
+        if (this.isProcessing) {
+            this.showMessage('Ya hay un proceso en ejecución', 'error');
+            return;
+        }
+
+        const url = this.urlInput.value.trim();
+        if (!url) {
+            this.showMessage('Por favor, ingresa una URL válida', 'error');
+            return;
+        }
+
+        this.isProcessing = true;
+        this.setLoading(true, 'Agregando a la lista existente...');
+
+        try {
+            const depth = 1; // Solo página principal para agregar
+            const pageLimit = 3;
+            const minLength = parseInt(this.minLengthInput.value);
+            const filterCommon = this.filterCommonCheckbox.checked;
+
+            const originalCount = this.scraper.wordsSet.size;
+            const result = await this.scraper.scrapeWebsite(url, depth, pageLimit, minLength, filterCommon);
+            const newWords = result.stats.wordCount - originalCount;
+
+            this.updateUIWithResults(result);
+            this.showMessage(`Agregadas ${newWords} palabras nuevas al diccionario`, 'success');
+
+        } catch (error) {
+            console.error('Error al agregar:', error);
+            this.showMessage(`Error: ${error.message}`, 'error');
+        } finally {
+            this.setLoading(false);
+            this.isProcessing = false;
+        }
+    }
+
+    async processFile() {
+        if (this.isProcessing) {
+            this.showMessage('Ya hay un proceso en ejecución', 'error');
+            return;
+        }
+
+        const file = this.fileInput.files[0];
+        if (!file) {
+            this.showMessage('Por favor, selecciona un archivo', 'error');
+            return;
+        }
+
+        this.isProcessing = true;
+        this.setLoading(true, 'Procesando archivo...');
+
+        try {
+            const minLength = parseInt(this.minLengthInput.value);
+            const filterCommon = this.filterCommonCheckbox.checked;
+
+            await this.updateProgress(30, 'Leyendo archivo...');
+            const result = await this.scraper.processFile(file, minLength, filterCommon);
+            await this.updateProgress(100, 'Archivo procesado');
+
+            this.updateUIWithResults(result);
+            this.showMessage(`Archivo procesado. ${result.stats.wordCount} palabras únicas encontradas.`, 'success');
+
+            // Limpiar input de archivo
+            this.fileInput.value = '';
+
+        } catch (error) {
+            console.error('Error procesando archivo:', error);
+            this.showMessage(`Error: ${error.message}`, 'error');
+        } finally {
+            this.setLoading(false);
+            this.isProcessing = false;
+        }
+    }
+
+    updateUIWithResults(result) {
+        this.updateWordsList(result.words);
+        this.updateSourcesList(result.sources);
+        this.updateStats(result.stats);
+        
+        if (result.totalTime) {
+            this.totalTimeSpan.textContent = `${result.totalTime}s`;
+        }
+        
+        const lastSource = result.sources[result.sources.length - 1];
+        if (lastSource) {
+            this.lastSourceSpan.textContent = lastSource.name;
+        }
+    }
+
+    updateWordsList(words = []) {
+        this.wordsList.innerHTML = '';
+        this.currentWords = words;
+
+        if (words.length === 0) {
+            this.wordsList.appendChild(this.getEmptyState('words'));
+            return;
+        }
+
+        const searchTerm = this.searchInput.value.toLowerCase();
+        const filteredWords = searchTerm ? 
+            words.filter(word => word.toLowerCase().includes(searchTerm)) : 
+            words;
+
+        filteredWords.forEach(word => {
+            const li = document.createElement('li');
+            li.textContent = word;
+            li.title = `Frecuencia: ${this.scraper.wordFrequency[word] || 1}`;
+            this.wordsList.appendChild(li);
+        });
+
+        this.wordsBadge.textContent = filteredWords.length;
+    }
+
+    updateSourcesList(sources = []) {
+        const sourcesList = document.getElementById('sources-list');
+        sourcesList.innerHTML = '';
+
+        if (sources.length === 0) {
+            sourcesList.appendChild(this.getEmptyState('sources'));
+            return;
+        }
+
+        // Mostrar las fuentes más recientes primero
+        sources.slice().reverse().forEach(source => {
+            const sourceItem = document.createElement('div');
+            sourceItem.className = 'source-item';
+            
+            sourceItem.innerHTML = `
+                <div class="source-info">
+                    <div class="source-name">${source.name}</div>
+                    <div class="source-stats">
+                        ${source.wordsFound} palabras • ${source.newWords} nuevas • ${source.processingTime}s
+                    </div>
+                </div>
+                <div class="source-words">+${source.newWords}</div>
+            `;
+            
+            sourcesList.appendChild(sourceItem);
+        });
+    }
+
+    updateStats(stats = null) {
+        if (stats) {
+            this.wordCountSpan.textContent = stats.wordCount;
+            this.sourcesCountSpan.textContent = stats.sourcesCount;
+            this.totalWordsSpan.textContent = stats.totalWordsProcessed;
+            this.charCountSpan.textContent = stats.charCount.toLocaleString();
+            this.efficiencySpan.textContent = `${stats.efficiency}/s`;
+        } else {
+            this.wordCountSpan.textContent = '0';
+            this.sourcesCountSpan.textContent = '0';
+            this.totalWordsSpan.textContent = '0';
+            this.charCountSpan.textContent = '0';
+            this.efficiencySpan.textContent = '0/s';
+            this.totalTimeSpan.textContent = '0s';
+            this.lastSourceSpan.textContent = '-';
+            this.wordsBadge.textContent = '0';
+        }
+    }
+
+    filterWords() {
+        this.updateWordsList(Array.from(this.scraper.wordsSet));
+    }
+
+    sortWords(order) {
+        if (this.scraper.wordsSet.size === 0) {
+            this.showMessage('No hay palabras para ordenar', 'info');
+            return;
+        }
+
+        const words = Array.from(this.scraper.wordsSet);
+
+        switch (order) {
+            case 'asc':
+                words.sort();
+                this.showMessage('Palabras ordenadas A-Z', 'info');
+                break;
+            case 'desc':
+                words.sort().reverse();
+                this.showMessage('Palabras ordenadas Z-A', 'info');
+                break;
+            case 'length-asc':
+                words.sort((a, b) => a.length - b.length);
+                this.showMessage('Palabras ordenadas por longitud (corto a largo)', 'info');
+                break;
+            case 'length-desc':
+                words.sort((a, b) => b.length - a.length);
+                this.showMessage('Palabras ordenadas por longitud (largo a corto)', 'info');
+                break;
+        }
+
+        this.updateWordsList(words);
+    }
+
+    clearAll() {
+        if (this.scraper.wordsSet.size === 0) {
+            this.showMessage('No hay palabras para limpiar', 'info');
+            return;
+        }
+
+        if (confirm('¿Estás seguro de que quieres limpiar todas las palabras y fuentes?')) {
+            this.scraper.clearAll();
+            this.updateUI();
+            this.showMessage('Todas las palabras y fuentes han sido eliminadas', 'info');
+        }
+    }
+
+    exportWords() {
+        if (this.scraper.wordsSet.size === 0) {
+            this.showMessage('No hay palabras para exportar', 'error');
+            return;
+        }
+
+        const separator = this.exportSeparator.value;
+        let actualSeparator = separator;
+        
+        if (separator === '\\t') actualSeparator = '\t';
+        else if (separator === '\\n') actualSeparator = '\n';
+
+        const content = Array.from(this.scraper.wordsSet).join(actualSeparator);
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `diccionario_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.showMessage('Diccionario exportado correctamente', 'success');
+    }
+
+    // Métodos de UI
+    showMessage(text, type = 'info') {
+        const icon = type === 'success' ? 'fa-check-circle' : 
+                     type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+
+        this.messageDiv.innerHTML = `
+            <div class="message ${type}">
+                <i class="fas ${icon}"></i>
+                <span>${text}</span>
+            </div>
+        `;
+
+        setTimeout(() => {
+            this.messageDiv.innerHTML = '';
+        }, 5000);
+    }
+
+    setLoading(loading, text = '') {
+        if (loading) {
+            this.loading.style.display = 'block';
+            this.loadingText.textContent = text;
+            this.scrapeBtn.disabled = true;
+            this.addToListBtn.disabled = true;
+            this.processFileBtn.disabled = true;
+        } else {
+            this.loading.style.display = 'none';
+            this.scrapeBtn.disabled = false;
+            this.addToListBtn.disabled = false;
+            this.processFileBtn.disabled = false;
+        }
+    }
+
+    async updateProgress(percent, text) {
+        if (this.progressBar && this.progressText && this.progressPercent) {
+            this.progressBar.style.width = `${percent}%`;
+            this.progressPercent.textContent = `${Math.round(percent)}%`;
+            this.progressText.textContent = text;
+            
+            // Actualizar paso de progreso basado en el porcentaje
+            const stepIndex = Math.floor(percent / 20);
+            this.updateProgressStep(stepIndex, 'active');
+            
+            if (percent === 100) {
+                // Marcar todos los pasos como completados
+                for (let i = 0; i < 5; i++) {
+                    this.updateProgressStep(i, 'completed');
+                }
+            }
+        }
+        
+        // Pequeña pausa para que se vea la animación
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    setupProgressSteps(steps) {
+        this.progressStepsContainer.innerHTML = '';
+        
+        steps.forEach((step, index) => {
+            const stepElement = document.createElement('div');
+            stepElement.className = 'progress-step';
+            
+            const icon = document.createElement('div');
+            icon.className = 'step-icon';
+            icon.innerHTML = '<i class="fas fa-clock"></i>';
+            
+            const text = document.createElement('span');
+            text.textContent = step;
+            
+            stepElement.appendChild(icon);
+            stepElement.appendChild(text);
+            this.progressStepsContainer.appendChild(stepElement);
+        });
+    }
+
+    updateProgressStep(stepIndex, status) {
+        const steps = this.progressStepsContainer.querySelectorAll('.progress-step');
+        if (steps[stepIndex]) {
+            const icon = steps[stepIndex].querySelector('.step-icon');
+            if (icon) {
+                icon.className = 'step-icon';
+                
+                if (status === 'completed') {
+                    icon.innerHTML = '<i class="fas fa-check"></i>';
+                    icon.classList.add('completed');
+                } else if (status === 'active') {
+                    icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    icon.classList.add('active');
+                } else {
+                    icon.innerHTML = '<i class="fas fa-clock"></i>';
+                }
             }
         }
     }
-}
 
-// Función para actualizar estadísticas
-function updateStats(stats = null) {
-    if (stats) {
-        wordCountSpan.textContent = stats.wordCount;
-        charCountSpan.textContent = stats.charCount.toLocaleString();
-        pagesCountSpan.textContent = stats.pagesAnalyzed;
-        linksCountSpan.textContent = stats.linksFound;
-        currentUrlSpan.textContent = urlInput.value ? new URL(urlInput.value).hostname : '-';
-        scrapeTimeSpan.textContent = `${stats.scrapeTime}s`;
-        uniquePercentSpan.textContent = `${stats.uniquePercent}%`;
-        efficiencySpan.textContent = `${stats.efficiency}/s`;
-    } else {
-        wordCountSpan.textContent = '0';
-        charCountSpan.textContent = '0';
-        pagesCountSpan.textContent = '0';
-        linksCountSpan.textContent = '0';
-        currentUrlSpan.textContent = '-';
-        scrapeTimeSpan.textContent = '0s';
-        uniquePercentSpan.textContent = '0%';
-        efficiencySpan.textContent = '0/s';
+    getEmptyState(type) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state';
+        
+        if (type === 'words') {
+            emptyState.innerHTML = `
+                <i class="fas fa-language"></i>
+                <p>No hay palabras extraídas aún</p>
+                <p>Ingresa una URL o carga un archivo para comenzar</p>
+            `;
+        } else if (type === 'sources') {
+            emptyState.innerHTML = `
+                <i class="fas fa-globe"></i>
+                <p>No hay fuentes analizadas</p>
+            `;
+        }
+        
+        return emptyState;
     }
-}
 
-// Función para actualizar la lista de palabras
-function updateWordsList(words = []) {
-    wordsList.innerHTML = '';
-    currentWords = words;
-    
-    if (words.length === 0) {
-        wordsList.appendChild(emptyWords);
-        emptyWords.style.display = 'block';
-    } else {
-        emptyWords.style.display = 'none';
+    toggleAdvancedSettings() {
+        const settingsContent = document.getElementById('settings-content');
+        const settingsChevron = document.getElementById('settings-chevron');
+        const isVisible = settingsContent.classList.contains('show');
         
-        words.forEach(word => {
-            const li = document.createElement('li');
-            li.textContent = word;
-            wordsList.appendChild(li);
-        });
+        if (isVisible) {
+            settingsContent.classList.remove('show');
+            settingsChevron.classList.remove('fa-chevron-up');
+            settingsChevron.classList.add('fa-chevron-down');
+        } else {
+            settingsContent.classList.add('show');
+            settingsChevron.classList.remove('fa-chevron-down');
+            settingsChevron.classList.add('fa-chevron-up');
+        }
     }
-}
 
-// Función para actualizar palabras frecuentes
-function updateFrequentWords(frequency = {}) {
-    frequentWordsList.innerHTML = '';
-    
-    if (Object.keys(frequency).length === 0) {
-        frequentWordsList.appendChild(emptyFreq);
-        emptyFreq.style.display = 'block';
-        return;
+    updateUI() {
+        this.updateWordsList(Array.from(this.scraper.wordsSet));
+        this.updateSourcesList(this.scraper.sources);
+        this.updateStats(this.scraper.getStats());
     }
-    
-    emptyFreq.style.display = 'none';
-    
-    // Ordenar palabras por frecuencia
-    const sortedByFrequency = Object.entries(frequency)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 15);
-    
-    sortedByFrequency.forEach(([word, count]) => {
-        const li = document.createElement('li');
-        
-        const wordSpan = document.createElement('span');
-        wordSpan.textContent = word;
-        
-        const freqSpan = document.createElement('span');
-        freqSpan.className = 'word-frequency';
-        freqSpan.textContent = `${count} ocurrencias`;
-        
-        li.appendChild(wordSpan);
-        li.appendChild(freqSpan);
-        frequentWordsList.appendChild(li);
-    });
-}
 
-// Función para actualizar la estructura del sitio
-function updateSiteStructure(links = []) {
-    siteStructureList.innerHTML = '';
-    
-    if (links.length === 0) {
-        siteStructureList.appendChild(emptyStructure);
-        emptyStructure.style.display = 'block';
-        return;
+    async runTests() {
+        this.showMessage('Ejecutando tests de verificación...', 'info');
+        
+        try {
+            if (typeof window !== 'undefined' && window.runScraperTests) {
+                await window.runScraperTests(this.scraper);
+            } else {
+                this.showMessage('Los tests no están disponibles', 'error');
+            }
+        } catch (error) {
+            this.showMessage(`Error en tests: ${error.message}`, 'error');
+        }
     }
-    
-    emptyStructure.style.display = 'none';
-    
-    // Mostrar los primeros 10 enlaces encontrados
-    links.slice(0, 10).forEach(link => {
-        const li = document.createElement('li');
-        
-        const linkSpan = document.createElement('span');
-        linkSpan.textContent = link.title || link.url;
-        
-        const typeSpan = document.createElement('span');
-        typeSpan.className = 'word-frequency';
-        typeSpan.textContent = link.type === 'internal' ? 'Interno' : 'Externo';
-        
-        li.appendChild(linkSpan);
-        li.appendChild(typeSpan);
-        siteStructureList.appendChild(li);
-    });
-}
 
-// Función principal de scraping
-async function startScraping() {
-    const url = urlInput.value.trim();
-    if (!url) {
-        showMessage('Por favor, ingresa una URL válida', 'error');
-        return;
-    }
-    
-    // Validar formato de URL
-    try {
-        new URL(url);
-    } catch (e) {
-        showMessage('La URL ingresada no es válida', 'error');
-        return;
-    }
-    
-    try {
-        loading.style.display = 'block';
-        loadingText.textContent = 'Iniciando análisis...';
-        showMessage('Preparando el análisis de la página web...', 'info');
-        
-        // Configurar pasos de progreso
-        const steps = [
-            'Conectando con el servidor',
-            'Descargando contenido principal',
-            'Extrayendo enlaces internos',
-            'Analizando páginas secundarias',
-            'Procesando texto y palabras',
-            'Generando estadísticas'
-        ];
-        
-        setupProgressSteps(steps);
-        updateProgress(0, 'Iniciando...');
-        
-        // Obtener configuración
-        const depth = parseInt(depthSelect.value);
-        const pageLimit = parseInt(pageLimitInput.value);
-        const minLength = parseInt(minLengthInput.value);
-        const filterCommon = filterCommonCheckbox.checked;
-        const includeExternal = includeExternalCheckbox.checked;
-        const timeout = parseInt(timeoutInput.value) * 1000;
-        
-        // Ejecutar scraping
-        const result = await scraper.scrapeWebsite(
-            url, depth, pageLimit, minLength, filterCommon, includeExternal, timeout
-        );
-        
-        // Actualizar la interfaz con los resultados
-        updateWordsList(result.words);
-        updateFrequentWords(result.frequency);
-        updateSiteStructure(result.links);
-        updateStats(result.stats);
-        
-        showMessage(`Análisis completado. Se analizaron ${result.stats.pagesAnalyzed} páginas y se encontraron ${result.stats.wordCount} palabras únicas.`, 'success');
-        
-    } catch (error) {
-        console.error('Error al extraer palabras:', error);
-        showMessage(`Error: ${error.message}`, 'error');
-    } finally {
-        loading.style.display = 'none';
+    resetAll() {
+        if (confirm('¿Estás seguro de que quieres reiniciar toda la aplicación?')) {
+            this.scraper.clearAll();
+            this.urlInput.value = '';
+            this.fileInput.value = '';
+            this.searchInput.value = '';
+            this.updateUI();
+            this.showMessage('Aplicación reiniciada correctamente', 'info');
+        }
     }
 }
 
-// Funciones de ordenamiento y filtrado
-function sortWords(order) {
-    if (!scraper || scraper.wordsSet.size === 0) {
-        showMessage('No hay palabras para ordenar', 'info');
-        return;
-    }
-    
-    const words = Array.from(scraper.wordsSet);
-    
-    switch (order) {
-        case 'asc':
-            words.sort();
-            showMessage('Palabras ordenadas alfabéticamente (A-Z)', 'info');
-            break;
-        case 'desc':
-            words.sort().reverse();
-            showMessage('Palabras ordenadas alfabéticamente (Z-A)', 'info');
-            break;
-        case 'length-asc':
-            words.sort((a, b) => a.length - b.length);
-            showMessage('Palabras ordenadas por longitud (corto a largo)', 'info');
-            break;
-        case 'length-desc':
-            words.sort((a, b) => b.length - a.length);
-            showMessage('Palabras ordenadas por longitud (largo a corto)', 'info');
-            break;
-    }
-    
-    updateWordsList(words);
-}
-
-function filterShortWords() {
-    if (!scraper || scraper.wordsSet.size === 0) {
-        showMessage('No hay palabras para filtrar', 'info');
-        return;
-    }
-    
-    const filtered = Array.from(scraper.wordsSet).filter(word => word.length < 5);
-    updateWordsList(filtered);
-    showMessage(`Mostrando ${filtered.length} palabras cortas (<5 letras)`, 'info');
-}
-
-function filterLongWords() {
-    if (!scraper || scraper.wordsSet.size === 0) {
-        showMessage('No hay palabras para filtrar', 'info');
-        return;
-    }
-    
-    const filtered = Array.from(scraper.wordsSet).filter(word => word.length > 10);
-    updateWordsList(filtered);
-    showMessage(`Mostrando ${filtered.length} palabras largas (>10 letras)`, 'info');
-}
-
-function clearAllWords() {
-    if (!scraper || scraper.wordsSet.size === 0) {
-        showMessage('No hay palabras para limpiar', 'info');
-        return;
-    }
-    
-    if (confirm('¿Estás seguro de que quieres limpiar todas las palabras?')) {
-        scraper.wordsSet.clear();
-        scraper.wordFrequency = {};
-        scraper.pagesAnalyzed = 0;
-        scraper.linksFound = 0;
-        scraper.totalWordsFromPage = 0;
-        scraper.siteLinks = [];
-        
-        updateWordsList();
-        updateFrequentWords();
-        updateSiteStructure();
-        updateStats();
-        
-        showMessage('Todas las palabras han sido eliminadas', 'info');
-    }
-}
-
-function exportWords() {
-    if (!scraper || scraper.wordsSet.size === 0) {
-        showMessage('No hay palabras para exportar', 'error');
-        return;
-    }
-    
-    const separator = exportSeparator.value;
-    let actualSeparator = separator;
-    
-    // Convertir caracteres especiales
-    if (separator === '\\t') actualSeparator = '\t';
-    else if (separator === '\\n') actualSeparator = '\n';
-    
-    const content = Array.from(scraper.wordsSet).join(actualSeparator);
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'palabras_extraidas.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showMessage('Archivo exportado correctamente', 'success');
-}
-
-function toggleAdvancedSettings() {
-    const isVisible = settingsContent.classList.contains('show');
-    
-    if (isVisible) {
-        settingsContent.classList.remove('show');
-        settingsChevron.classList.remove('fa-chevron-up');
-        settingsChevron.classList.add('fa-chevron-down');
-    } else {
-        settingsContent.classList.add('show');
-        settingsChevron.classList.remove('fa-chevron-down');
-        settingsChevron.classList.add('fa-chevron-up');
-    }
-}
+// Inicializar la aplicación cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    window.app = new LexiScraperApp();
+});
 
 // Hacer updateProgress disponible globalmente para scraper.js
-window.updateProgress = updateProgress;
+window.updateProgress = function(percent, text) {
+    if (window.app) {
+        window.app.updateProgress(percent, text);
+    }
+};
