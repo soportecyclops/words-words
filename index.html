@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraper de Palabras</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .input-section {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        
+        #url-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .button-success {
+            background-color: var(--success-color);
+        }
+        
+        .button-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .button-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .button-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .stats p {
+            margin: 5px 0;
+        }
+        
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .words-container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .words-list {
+            list-style-type: none;
+        }
+        
+        .words-list li {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .words-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .export-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: var(--danger-color);
+            background-color: #fadbd8;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            color: var(--success-color);
+            background-color: #d5f4e6;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Web Scraper de Palabras</h1>
+            <p class="description">Extrae palabras únicas de páginas web y organízalas según tus necesidades</p>
+        </header>
+        
+        <div class="input-section">
+            <input type="text" id="url-input" placeholder="Ingresa la URL de la página web (ej: https://ejemplo.com)">
+            <button id="scrape-btn">Extraer Palabras</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Extrayendo palabras...</p>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div class="stats" id="stats">
+            <p>Total de palabras únicas: <span id="word-count">0</span></p>
+            <p>URL actual: <span id="current-url">Ninguna</span></p>
+        </div>
+        
+        <div class="controls">
+            <button id="sort-asc">Ordenar A-Z</button>
+            <button id="sort-desc">Ordenar Z-A</button>
+            <button id="sort-length-asc">Ordenar por Longitud (corto a largo)</button>
+            <button id="sort-length-desc">Ordenar por Longitud (largo a corto)</button>
+            <button id="filter-short">Filtrar palabras cortas (&lt;5 letras)</button>
+            <button id="filter-long">Filtrar palabras largas (&gt;10 letras)</button>
+            <button id="clear-words">Limpiar Lista</button>
+        </div>
+        
+        <div class="results-section">
+            <div class="words-container">
+                <h3>Palabras Extraídas</h3>
+                <ul class="words-list" id="words-list"></ul>
+            </div>
+            
+            <div class="words-container">
+                <h3>Palabras Frecuentes</h3>
+                <ul class="words-list" id="frequent-words"></ul>
+            </div>
+        </div>
+        
+        <div class="export-section">
+            <button id="export-btn" class="button-success">Exportar a Archivo de Texto</button>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let wordsSet = new Set();
+        let currentWords = [];
+        let wordFrequency = {};
+        
+        // Elementos del DOM
+        const urlInput = document.getElementById('url-input');
+        const scrapeBtn = document.getElementById('scrape-btn');
+        const loading = document.getElementById('loading');
+        const messageDiv = document.getElementById('message');
+        const wordCountSpan = document.getElementById('word-count');
+        const currentUrlSpan = document.getElementById('current-url');
+        const wordsList = document.getElementById('words-list');
+        const frequentWordsList = document.getElementById('frequent-words');
+        const sortAscBtn = document.getElementById('sort-asc');
+        const sortDescBtn = document.getElementById('sort-desc');
+        const sortLengthAscBtn = document.getElementById('sort-length-asc');
+        const sortLengthDescBtn = document.getElementById('sort-length-desc');
+        const filterShortBtn = document.getElementById('filter-short');
+        const filterLongBtn = document.getElementById('filter-long');
+        const clearWordsBtn = document.getElementById('clear-words');
+        const exportBtn = document.getElementById('export-btn');
+        
+        // Función para mostrar mensajes
+        function showMessage(text, type = 'info') {
+            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Función para actualizar estadísticas
+        function updateStats() {
+            wordCountSpan.textContent = wordsSet.size;
+            currentUrlSpan.textContent = urlInput.value || 'Ninguna';
+        }
+        
+        // Función para actualizar la lista de palabras
+        function updateWordsList(words = Array.from(wordsSet)) {
+            wordsList.innerHTML = '';
+            currentWords = words;
+            
+            words.forEach(word => {
+                const li = document.createElement('li');
+                li.textContent = word;
+                wordsList.appendChild(li);
+            });
+            
+            updateStats();
+        }
+        
+        // Función para actualizar palabras frecuentes
+        function updateFrequentWords() {
+            frequentWordsList.innerHTML = '';
+            
+            // Ordenar palabras por frecuencia
+            const sortedByFrequency = Object.entries(wordFrequency)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20); // Mostrar solo las 20 más frecuentes
+            
+            sortedByFrequency.forEach(([word, count]) => {
+                const li = document.createElement('li');
+                li.textContent = `${word} (${count})`;
+                frequentWordsList.appendChild(li);
+            });
+        }
+        
+        // Función para extraer palabras de una página web
+        async function scrapeWords(url) {
+            try {
+                loading.style.display = 'block';
+                showMessage('Extrayendo palabras...', 'info');
+                
+                // Usar un proxy CORS para evitar problemas de same-origin policy
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const response = await fetch(proxyUrl + encodeURIComponent(url));
+                
+                if (!response.ok) {
+                    throw new Error(`Error al cargar la página: ${response.status}`);
+                }
+                
+                const html = await response.text();
+                
+                // Crear un elemento temporal para parsear el HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Obtener solo el texto visible (excluir scripts, estilos, etc.)
+                const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                
+                // Extraer palabras usando una expresión regular
+                const words = textContent.match(/\b[a-zA-ZáéíóúÁÉÍÓÚñÑ]{3,}\b/g) || [];
+                
+                // Procesar palabras: convertir a minúsculas y eliminar duplicados
+                const newWords = words.map(word => word.toLowerCase());
+                
+                // Actualizar frecuencia de palabras
+                newWords.forEach(word => {
+                    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+                });
+                
+                // Agregar palabras al conjunto (Set automáticamente elimina duplicados)
+                newWords.forEach(word => wordsSet.add(word));
+                
+                // Actualizar la interfaz
+                updateWordsList();
+                updateFrequentWords();
+                
+                showMessage(`Se extrajeron ${newWords.length} palabras. ${wordsSet.size} palabras únicas en total.`, 'success');
+                
+            } catch (error) {
+                console.error('Error al extraer palabras:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Event Listeners
+        scrapeBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                showMessage('Por favor, ingresa una URL válida', 'error');
+                return;
+            }
+            
+            // Validar formato de URL
+            try {
+                new URL(url);
+            } catch (e) {
+                showMessage('La URL ingresada no es válida', 'error');
+                return;
+            }
+            
+            scrapeWords(url);
+        });
+        
+        sortAscBtn.addEventListener('click', () => {
+            const sorted = Array.from(wordsSet).sort();
+            updateWordsList(sorted);
+            showMessage('Palabras ordenadas alfabéticamente (A-Z)', 'info');
+        });
+        
+        sortDescBtn.addEventListener('click', () => {
+            const sorted = Array.from(wordsSet).sort().reverse();
+            updateWordsList(sorted);
+            showMessage('Palabras ordenadas alfabéticamente (Z-A)', 'info');
+        });
+        
+        sortLengthAscBtn.addEventListener('click', () => {
+            const sorted = Array.from(wordsSet).sort((a, b) => a.length - b.length);
+            updateWordsList(sorted);
+            showMessage('Palabras ordenadas por longitud (corto a largo)', 'info');
+        });
+        
+        sortLengthDescBtn.addEventListener('click', () => {
+            const sorted = Array.from(wordsSet).sort((a, b) => b.length - a.length);
+            updateWordsList(sorted);
+            showMessage('Palabras ordenadas por longitud (largo a corto)', 'info');
+        });
+        
+        filterShortBtn.addEventListener('click', () => {
+            const filtered = Array.from(wordsSet).filter(word => word.length < 5);
+            updateWordsList(filtered);
+            showMessage(`Mostrando ${filtered.length} palabras cortas (<5 letras)`, 'info');
+        });
+        
+        filterLongBtn.addEventListener('click', () => {
+            const filtered = Array.from(wordsSet).filter(word => word.length > 10);
+            updateWordsList(filtered);
+            showMessage(`Mostrando ${filtered.length} palabras largas (>10 letras)`, 'info');
+        });
+        
+        clearWordsBtn.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que quieres limpiar todas las palabras?')) {
+                wordsSet.clear();
+                wordFrequency = {};
+                updateWordsList();
+                updateFrequentWords();
+                showMessage('Todas las palabras han sido eliminadas', 'info');
+            }
+        });
+        
+        exportBtn.addEventListener('click', () => {
+            if (wordsSet.size === 0) {
+                showMessage('No hay palabras para exportar', 'error');
+                return;
+            }
+            
+            const content = Array.from(wordsSet).join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'palabras_extraidas.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showMessage('Archivo exportado correctamente', 'success');
+        });
+        
+        // Inicializar la aplicación
+        updateStats();
+    </script>
+</body>
+</html>
