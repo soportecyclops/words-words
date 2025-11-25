@@ -16,7 +16,7 @@
                 </div>
                 <h1>LexiScraper Pro</h1>
             </div>
-            <p class="tagline">Análisis léxico avanzado con scraping profundo y barra de progreso</p>
+            <p class="tagline">Análisis léxico avanzado con múltiples fuentes y scraping profundo</p>
         </header>
         
         <div class="card">
@@ -32,16 +32,20 @@
                 <button id="scrape-btn" class="btn">
                     <i class="fas fa-download"></i> Extraer
                 </button>
+                <button id="add-to-list-btn" class="btn btn-accent">
+                    <i class="fas fa-plus"></i> Agregar
+                </button>
             </div>
             
-            <!-- Barra de progreso -->
-            <div class="progress-container" id="progress-container">
-                <div class="progress-info">
+            <!-- Barra de progreso mejorada -->
+            <div class="progress-section" id="progress-section">
+                <div class="progress-header">
                     <span id="progress-text">Preparando...</span>
                     <span id="progress-percent">0%</span>
                 </div>
-                <div class="progress-bar" id="progress-bar"></div>
-                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
                 <div class="progress-steps" id="progress-steps">
                     <!-- Los pasos se agregarán dinámicamente -->
                 </div>
@@ -53,6 +57,24 @@
             </div>
             
             <div id="message"></div>
+            
+            <!-- Carga de archivos -->
+            <div class="file-upload-section">
+                <div class="section-title">
+                    <i class="fas fa-file-upload"></i>
+                    <h3>Cargar Archivo de Texto</h3>
+                </div>
+                <div class="file-input-container">
+                    <input type="file" id="file-input" accept=".txt,.csv,.json" class="file-input">
+                    <label for="file-input" class="file-input-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Seleccionar archivo</span>
+                    </label>
+                    <button id="process-file-btn" class="btn btn-outline">
+                        <i class="fas fa-cogs"></i> Procesar Archivo
+                    </button>
+                </div>
+            </div>
             
             <!-- Configuración avanzada -->
             <div class="advanced-settings">
@@ -67,15 +89,14 @@
                         <label class="setting-label">Profundidad de scraping</label>
                         <select class="setting-input" id="depth-select">
                             <option value="1">Página principal solamente</option>
-                            <option value="2">Página principal + enlaces internos (1 nivel)</option>
-                            <option value="3" selected>Página principal + enlaces internos (2 niveles)</option>
-                            <option value="4">Máxima profundidad (3 niveles)</option>
+                            <option value="2" selected>Página principal + enlaces internos (1 nivel)</option>
+                            <option value="3">Página principal + enlaces internos (2 niveles)</option>
                         </select>
                     </div>
                     
                     <div class="setting-group">
                         <label class="setting-label">Límite de páginas a analizar</label>
-                        <input type="number" class="setting-input" id="page-limit" value="10" min="1" max="50">
+                        <input type="number" class="setting-input" id="page-limit" value="5" min="1" max="20">
                     </div>
                     
                     <div class="setting-group">
@@ -86,18 +107,7 @@
                     <div class="setting-group">
                         <label class="setting-label">Filtrar palabras comunes</label>
                         <input type="checkbox" class="setting-checkbox" id="filter-common" checked>
-                        <label for="filter-common">Excluir palabras muy comunes (artículos, preposiciones)</label>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label class="setting-label">Incluir enlaces externos</label>
-                        <input type="checkbox" class="setting-checkbox" id="include-external">
-                        <label for="include-external">Analizar también enlaces a otros dominios</label>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label class="setting-label">Tiempo máximo de espera (segundos)</label>
-                        <input type="number" class="setting-input" id="timeout" value="30" min="5" max="120">
+                        <label for="filter-common">Excluir palabras muy comunes</label>
                     </div>
                 </div>
             </div>
@@ -108,16 +118,16 @@
                     <div class="stat-label">Palabras Únicas</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-value" id="sources-count">0</div>
+                    <div class="stat-label">Fuentes Analizadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-words">0</div>
+                    <div class="stat-label">Total de Palabras</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-value" id="char-count">0</div>
                     <div class="stat-label">Caracteres Totales</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="pages-count">0</div>
-                    <div class="stat-label">Páginas Analizadas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="links-count">0</div>
-                    <div class="stat-label">Enlaces Encontrados</div>
                 </div>
             </div>
             
@@ -134,14 +144,8 @@
                 <button id="sort-length-desc" class="btn btn-outline">
                     <i class="fas fa-sort-amount-down-alt"></i> Largas a Cortas
                 </button>
-                <button id="filter-short" class="btn btn-outline">
-                    <i class="fas fa-filter"></i> Palabras Cortas
-                </button>
-                <button id="filter-long" class="btn btn-outline">
-                    <i class="fas fa-filter"></i> Palabras Largas
-                </button>
                 <button id="clear-words" class="btn btn-outline">
-                    <i class="fas fa-trash-alt"></i> Limpiar
+                    <i class="fas fa-trash-alt"></i> Limpiar Todo
                 </button>
             </div>
         </div>
@@ -150,14 +154,21 @@
             <div class="section-title">
                 <i class="fas fa-list-ul"></i>
                 <h2>Palabras Extraídas</h2>
+                <span class="badge" id="words-badge">0</span>
             </div>
             
             <div class="words-container">
+                <div class="words-header">
+                    <input type="text" id="search-words" placeholder="Buscar palabras..." class="search-input">
+                    <button id="clear-search" class="btn btn-outline small">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
                 <ul class="words-list" id="words-list">
                     <div class="empty-state" id="empty-words">
                         <i class="fas fa-language"></i>
                         <p>No hay palabras extraídas aún</p>
-                        <p>Ingresa una URL y haz clic en Extraer</p>
+                        <p>Ingresa una URL o carga un archivo para comenzar</p>
                     </div>
                 </ul>
             </div>
@@ -167,16 +178,15 @@
                     <label class="setting-label">Separador para exportación:</label>
                     <select class="setting-input" id="export-separator">
                         <option value=" ">Espacio</option>
-                        <option value=",">Coma</option>
-                        <option value=";">>Punto y coma</option>
-                        <option value=".">Punto</option>
-                        <option value="\t">Tabulación</option>
+                        <option value="," selected>Coma</option>
+                        <option value=";">Punto y coma</option>
                         <option value="\n">Nueva línea</option>
+                        <option value="\t">Tabulación</option>
                         <option value="|">Pipe (|)</option>
                     </select>
                 </div>
                 <button id="export-btn" class="btn btn-success">
-                    <i class="fas fa-file-export"></i> Exportar a Archivo de Texto
+                    <i class="fas fa-file-export"></i> Exportar Diccionario
                 </button>
             </div>
         </div>
@@ -184,64 +194,50 @@
         <div class="card">
             <div class="section-title">
                 <i class="fas fa-chart-bar"></i>
-                <h2>Estadísticas de Frecuencia</h2>
+                <h2>Estadísticas y Fuentes</h2>
             </div>
             
             <div class="words-container">
-                <ul class="frequent-words-list" id="frequent-words">
-                    <div class="empty-state" id="empty-freq">
-                        <i class="fas fa-chart-pie"></i>
-                        <p>No hay datos de frecuencia disponibles</p>
+                <div class="sources-list" id="sources-list">
+                    <div class="empty-state" id="empty-sources">
+                        <i class="fas fa-globe"></i>
+                        <p>No hay fuentes analizadas</p>
                     </div>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="section-title">
-                <i class="fas fa-info-circle"></i>
-                <h2>Información del Análisis</h2>
-            </div>
-            
-            <div class="stats-container">
-                <div class="stat-card">
-                    <div class="stat-value" id="current-url">-</div>
-                    <div class="stat-label">URL Actual</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="scrape-time">0s</div>
-                    <div class="stat-label">Tiempo de Análisis</div>
-                </div>
-                <div class="stat-value" id="unique-percent">0%</div>
-                <div class="stat-label">Palabras Únicas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="efficiency">0/s</div>
-                    <div class="stat-label">Palabras por Segundo</div>
                 </div>
             </div>
             
             <div class="section-title">
-                <i class="fas fa-sitemap"></i>
-                <h2>Estructura del Sitio</h2>
+                <i class="fas fa-info-circle"></i>
+                <h3>Información del Análisis</h3>
             </div>
             
-            <div class="words-container">
-                <ul class="frequent-words-list" id="site-structure">
-                    <div class="empty-state" id="empty-structure">
-                        <i class="fas fa-sitemap"></i>
-                        <p>No hay datos de estructura disponibles</p>
-                    </div>
-                </ul>
+            <div class="analysis-info">
+                <div class="info-item">
+                    <span class="info-label">Tiempo total:</span>
+                    <span class="info-value" id="total-time">0s</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Eficiencia:</span>
+                    <span class="info-value" id="efficiency">0/s</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Última fuente:</span>
+                    <span class="info-value" id="last-source">-</span>
+                </div>
             </div>
         </div>
         
         <footer>
-            <p>LexiScraper Pro &copy; 2023 | Herramienta de análisis léxico avanzado para investigación y estudio</p>
+            <p>LexiScraper Pro &copy; 2023 | Herramienta de análisis léxico avanzado</p>
+            <div class="footer-links">
+                <button id="run-tests-btn" class="btn-link">Ejecutar Tests</button>
+                <button id="reset-all-btn" class="btn-link">Reiniciar Todo</button>
+            </div>
         </footer>
     </div>
 
     <script src="scraper.js"></script>
     <script src="app.js"></script>
+    <script src="tests.js"></script>
 </body>
 </html>
