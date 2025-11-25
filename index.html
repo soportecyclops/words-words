@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexiScraper | Extracción Inteligente de Palabras</title>
+    <title>LexiScraper Pro | Análisis Léxico Avanzado</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -371,6 +371,112 @@
             border-top: 1px solid var(--gray-light);
         }
         
+        /* Barra de progreso */
+        .progress-container {
+            margin: 20px 0;
+            background-color: var(--gray-light);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        
+        .progress-steps {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gray-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+        }
+        
+        .step-icon.active {
+            background: var(--secondary);
+        }
+        
+        .step-icon.completed {
+            background: var(--success);
+        }
+        
+        /* Configuración avanzada */
+        .advanced-settings {
+            background: var(--light);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-top: 20px;
+        }
+        
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        
+        .settings-content {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .settings-content.show {
+            display: grid;
+        }
+        
+        .setting-group {
+            margin-bottom: 15px;
+        }
+        
+        .setting-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .setting-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius);
+        }
+        
+        .setting-checkbox {
+            margin-right: 8px;
+        }
+        
         /* Scrollbar personalizado */
         ::-webkit-scrollbar {
             width: 8px;
@@ -398,9 +504,9 @@
                 <div class="logo-icon">
                     <i class="fas fa-language"></i>
                 </div>
-                <h1>LexiScraper</h1>
+                <h1>LexiScraper Pro</h1>
             </div>
-            <p class="tagline">Extracción y análisis inteligente de vocabulario de páginas web</p>
+            <p class="tagline">Análisis léxico avanzado con scraping profundo y barra de progreso</p>
         </header>
         
         <div class="card">
@@ -418,12 +524,73 @@
                 </button>
             </div>
             
+            <!-- Barra de progreso -->
+            <div class="progress-container" id="progress-container">
+                <div class="progress-info">
+                    <span id="progress-text">Preparando...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar" id="progress-bar"></div>
+                
+                <div class="progress-steps" id="progress-steps">
+                    <!-- Los pasos se agregarán dinámicamente -->
+                </div>
+            </div>
+            
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Analizando contenido web...</p>
+                <p id="loading-text">Analizando contenido web...</p>
             </div>
             
             <div id="message"></div>
+            
+            <!-- Configuración avanzada -->
+            <div class="advanced-settings">
+                <div class="settings-toggle" id="settings-toggle">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Configuración Avanzada</h3>
+                    <i class="fas fa-chevron-down" id="settings-chevron"></i>
+                </div>
+                
+                <div class="settings-content" id="settings-content">
+                    <div class="setting-group">
+                        <label class="setting-label">Profundidad de scraping</label>
+                        <select class="setting-input" id="depth-select">
+                            <option value="1">Página principal solamente</option>
+                            <option value="2">Página principal + enlaces internos (1 nivel)</option>
+                            <option value="3" selected>Página principal + enlaces internos (2 niveles)</option>
+                            <option value="4">Máxima profundidad (3 niveles)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Límite de páginas a analizar</label>
+                        <input type="number" class="setting-input" id="page-limit" value="10" min="1" max="50">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Longitud mínima de palabras</label>
+                        <input type="number" class="setting-input" id="min-length" value="3" min="1" max="10">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Filtrar palabras comunes</label>
+                        <input type="checkbox" class="setting-checkbox" id="filter-common" checked>
+                        <label for="filter-common">Excluir palabras muy comunes (artículos, preposiciones)</label>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Incluir enlaces externos</label>
+                        <input type="checkbox" class="setting-checkbox" id="include-external">
+                        <label for="include-external">Analizar también enlaces a otros dominios</label>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Tiempo máximo de espera (segundos)</label>
+                        <input type="number" class="setting-input" id="timeout" value="30" min="5" max="120">
+                    </div>
+                </div>
+            </div>
             
             <div class="stats-container">
                 <div class="stat-card">
@@ -435,42 +602,13 @@
                     <div class="stat-label">Caracteres Totales</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="avg-length">0</div>
-                    <div class="stat-label">Longitud Promedio</div>
+                    <div class="stat-value" id="pages-count">0</div>
+                    <div class="stat-label">Páginas Analizadas</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="page-words">0</div>
-                    <div class="stat-label">Palabras en Página</div>
+                    <div class="stat-value" id="links-count">0</div>
+                    <div class="stat-label">Enlaces Encontrados</div>
                 </div>
-            </div>
-            
-            <div class="section-title">
-                <i class="fas fa-sliders-h"></i>
-                <h2>Organización y Filtrado</h2>
-            </div>
-            
-            <div class="controls">
-                <button id="sort-asc" class="btn btn-outline">
-                    <i class="fas fa-sort-alpha-down"></i> A-Z
-                </button>
-                <button id="sort-desc" class="btn btn-outline">
-                    <i class="fas fa-sort-alpha-down-alt"></i> Z-A
-                </button>
-                <button id="sort-length-asc" class="btn btn-outline">
-                    <i class="fas fa-sort-amount-down"></i> Cortas a Largas
-                </button>
-                <button id="sort-length-desc" class="btn btn-outline">
-                    <i class="fas fa-sort-amount-down-alt"></i> Largas a Cortas
-                </button>
-                <button id="filter-short" class="btn btn-outline">
-                    <i class="fas fa-filter"></i> Palabras Cortas
-                </button>
-                <button id="filter-long" class="btn btn-outline">
-                    <i class="fas fa-filter"></i> Palabras Largas
-                </button>
-                <button id="clear-words" class="btn btn-outline">
-                    <i class="fas fa-trash-alt"></i> Limpiar
-                </button>
             </div>
         </div>
         
@@ -516,7 +654,7 @@
         <div class="card">
             <div class="section-title">
                 <i class="fas fa-info-circle"></i>
-                <h2>Información de la URL</h2>
+                <h2>Información del Análisis</h2>
             </div>
             
             <div class="stats-container">
@@ -533,36 +671,28 @@
                     <div class="stat-label">Palabras Únicas</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="efficiency">0%</div>
-                    <div class="stat-label">Eficiencia</div>
+                    <div class="stat-value" id="efficiency">0/s</div>
+                    <div class="stat-label">Palabras por Segundo</div>
                 </div>
             </div>
             
             <div class="section-title">
-                <i class="fas fa-lightbulb"></i>
-                <h2>Sugerencias</h2>
+                <i class="fas fa-sitemap"></i>
+                <h2>Estructura del Sitio</h2>
             </div>
             
             <div class="words-container">
-                <ul class="frequent-words-list">
-                    <li>
-                        <span>Utiliza URLs de sitios con contenido textual rico</span>
-                    </li>
-                    <li>
-                        <span>Prueba con artículos, blogs o documentación</span>
-                    </li>
-                    <li>
-                        <span>Exporta tus resultados para análisis posterior</span>
-                    </li>
-                    <li>
-                        <span>Filtra palabras para encontrar patrones específicos</span>
-                    </li>
+                <ul class="frequent-words-list" id="site-structure">
+                    <div class="empty-state" id="empty-structure">
+                        <i class="fas fa-sitemap"></i>
+                        <p>No hay datos de estructura disponibles</p>
+                    </div>
                 </ul>
             </div>
         </div>
         
         <footer>
-            <p>LexiScraper &copy; 2023 | Herramienta de análisis léxico para investigación y estudio</p>
+            <p>LexiScraper Pro &copy; 2023 | Herramienta de análisis léxico avanzado para investigación y estudio</p>
         </footer>
     </div>
 
@@ -573,24 +703,31 @@
         let wordFrequency = {};
         let totalWordsFromPage = 0;
         let scrapeStartTime = 0;
+        let pagesAnalyzed = 0;
+        let linksFound = 0;
+        let currentProgress = 0;
+        let progressSteps = [];
         
         // Elementos del DOM
         const urlInput = document.getElementById('url-input');
         const scrapeBtn = document.getElementById('scrape-btn');
         const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
         const messageDiv = document.getElementById('message');
         const wordCountSpan = document.getElementById('word-count');
         const charCountSpan = document.getElementById('char-count');
-        const avgLengthSpan = document.getElementById('avg-length');
-        const pageWordsSpan = document.getElementById('page-words');
+        const pagesCountSpan = document.getElementById('pages-count');
+        const linksCountSpan = document.getElementById('links-count');
         const currentUrlSpan = document.getElementById('current-url');
         const scrapeTimeSpan = document.getElementById('scrape-time');
         const uniquePercentSpan = document.getElementById('unique-percent');
         const efficiencySpan = document.getElementById('efficiency');
         const wordsList = document.getElementById('words-list');
         const frequentWordsList = document.getElementById('frequent-words');
+        const siteStructureList = document.getElementById('site-structure');
         const emptyWords = document.getElementById('empty-words');
         const emptyFreq = document.getElementById('empty-freq');
+        const emptyStructure = document.getElementById('empty-structure');
         const sortAscBtn = document.getElementById('sort-asc');
         const sortDescBtn = document.getElementById('sort-desc');
         const sortLengthAscBtn = document.getElementById('sort-length-asc');
@@ -599,6 +736,36 @@
         const filterLongBtn = document.getElementById('filter-long');
         const clearWordsBtn = document.getElementById('clear-words');
         const exportBtn = document.getElementById('export-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressPercent = document.getElementById('progress-percent');
+        const progressStepsContainer = document.getElementById('progress-steps');
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsContent = document.getElementById('settings-content');
+        const settingsChevron = document.getElementById('settings-chevron');
+        
+        // Configuración
+        const depthSelect = document.getElementById('depth-select');
+        const pageLimitInput = document.getElementById('page-limit');
+        const minLengthInput = document.getElementById('min-length');
+        const filterCommonCheckbox = document.getElementById('filter-common');
+        const includeExternalCheckbox = document.getElementById('include-external');
+        const timeoutInput = document.getElementById('timeout');
+        
+        // Palabras comunes a filtrar (si está activada la opción)
+        const commonWords = new Set([
+            'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 
+            'de', 'del', 'al', 'a', 'en', 'y', 'o', 'pero', 'por', 
+            'para', 'con', 'sin', 'sobre', 'bajo', 'entre', 'hacia', 
+            'desde', 'hasta', 'durante', 'mediante', 'según', 'ante', 
+            'bajo', 'cabe', 'con', 'contra', 'de', 'desde', 'durante', 
+            'en', 'entre', 'hacia', 'hasta', 'mediante', 'para', 'por', 
+            'según', 'sin', 'so', 'sobre', 'tras', 'versus', 'vía', 
+            'que', 'qué', 'cual', 'cuál', 'quien', 'quién', 'cuyo', 
+            'cuya', 'cuyos', 'cuyas', 'donde', 'dónde', 'como', 'cómo', 
+            'cuando', 'cuándo', 'cuanto', 'cuánto', 'cuanta', 'cuánta', 
+            'cuantos', 'cuántos', 'cuantas', 'cuántas'
+        ]);
         
         // Función para mostrar mensajes
         function showMessage(text, type = 'info') {
@@ -617,6 +784,60 @@
             }, 5000);
         }
         
+        // Función para actualizar la barra de progreso
+        function updateProgress(percent, text) {
+            currentProgress = percent;
+            progressBar.style.width = `${percent}%`;
+            progressPercent.textContent = `${percent}%`;
+            progressText.textContent = text;
+        }
+        
+        // Función para agregar pasos de progreso
+        function setupProgressSteps(steps) {
+            progressStepsContainer.innerHTML = '';
+            progressSteps = steps;
+            
+            steps.forEach((step, index) => {
+                const stepElement = document.createElement('div');
+                stepElement.className = 'progress-step';
+                
+                const icon = document.createElement('div');
+                icon.className = 'step-icon';
+                icon.innerHTML = '<i class="fas fa-clock"></i>';
+                
+                const text = document.createElement('span');
+                text.textContent = step;
+                
+                stepElement.appendChild(icon);
+                stepElement.appendChild(text);
+                progressStepsContainer.appendChild(stepElement);
+                
+                // Guardar referencia al icono para actualizarlo después
+                progressSteps[index] = {
+                    text: step,
+                    icon: icon
+                };
+            });
+        }
+        
+        // Función para actualizar un paso de progreso
+        function updateProgressStep(stepIndex, status) {
+            if (progressSteps[stepIndex] && progressSteps[stepIndex].icon) {
+                const icon = progressSteps[stepIndex].icon;
+                icon.className = 'step-icon';
+                
+                if (status === 'completed') {
+                    icon.innerHTML = '<i class="fas fa-check"></i>';
+                    icon.classList.add('completed');
+                } else if (status === 'active') {
+                    icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    icon.classList.add('active');
+                } else {
+                    icon.innerHTML = '<i class="fas fa-clock"></i>';
+                }
+            }
+        }
+        
         // Función para actualizar estadísticas
         function updateStats() {
             wordCountSpan.textContent = wordsSet.size;
@@ -625,11 +846,8 @@
             const totalChars = Array.from(wordsSet).reduce((sum, word) => sum + word.length, 0);
             charCountSpan.textContent = totalChars.toLocaleString();
             
-            // Calcular longitud promedio
-            const avgLength = wordsSet.size > 0 ? (totalChars / wordsSet.size).toFixed(1) : 0;
-            avgLengthSpan.textContent = avgLength;
-            
-            pageWordsSpan.textContent = totalWordsFromPage.toLocaleString();
+            pagesCountSpan.textContent = pagesAnalyzed;
+            linksCountSpan.textContent = linksFound;
             currentUrlSpan.textContent = urlInput.value ? new URL(urlInput.value).hostname : '-';
             
             // Calcular porcentaje de palabras únicas
@@ -700,49 +918,69 @@
             });
         }
         
+        // Función para actualizar la estructura del sitio
+        function updateSiteStructure(links) {
+            siteStructureList.innerHTML = '';
+            
+            if (links.length === 0) {
+                siteStructureList.appendChild(emptyStructure);
+                emptyStructure.style.display = 'block';
+                return;
+            }
+            
+            emptyStructure.style.display = 'none';
+            
+            // Mostrar los primeros 10 enlaces encontrados
+            links.slice(0, 10).forEach(link => {
+                const li = document.createElement('li');
+                
+                const linkSpan = document.createElement('span');
+                linkSpan.textContent = link.title || link.url;
+                
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'word-frequency';
+                typeSpan.textContent = link.type === 'internal' ? 'Interno' : 'Externo';
+                
+                li.appendChild(linkSpan);
+                li.appendChild(typeSpan);
+                siteStructureList.appendChild(li);
+            });
+        }
+        
         // Función para extraer palabras de una página web
         async function scrapeWords(url) {
             try {
                 loading.style.display = 'block';
-                showMessage('Analizando el contenido de la página web...', 'info');
+                loadingText.textContent = 'Iniciando análisis...';
+                showMessage('Preparando el análisis de la página web...', 'info');
                 scrapeStartTime = Date.now();
                 
-                // En un entorno real, aquí se conectaría a un backend para evitar problemas CORS
-                // Para esta demostración, simularemos la extracción con un retraso
+                // Configurar pasos de progreso
+                const steps = [
+                    'Conectando con el servidor',
+                    'Descargando contenido principal',
+                    'Extrayendo enlaces internos',
+                    'Analizando páginas secundarias',
+                    'Procesando texto y palabras',
+                    'Generando estadísticas'
+                ];
                 
-                setTimeout(() => {
-                    // Simular datos de ejemplo para la demostración
-                    const sampleText = `
-                        El desarrollo web es el proceso de crear sitios web y aplicaciones para internet. 
-                        Incluye diseño web, desarrollo de contenido web, scripting del lado del cliente y del servidor, 
-                        y configuración de seguridad de red, entre otras tareas. El desarrollo web puede variar desde 
-                        desarrollar una simple página de texto plano hasta complejas aplicaciones web, negocios 
-                        electrónicos y servicios de redes sociales.
-                    `;
-                    
-                    // Extraer palabras usando una expresión regular
-                    const words = sampleText.match(/\b[a-zA-ZáéíóúÁÉÍÓÚñÑ]{3,}\b/g) || [];
-                    totalWordsFromPage = words.length;
-                    
-                    // Procesar palabras: convertir a minúsculas y eliminar duplicados
-                    const newWords = words.map(word => word.toLowerCase());
-                    
-                    // Actualizar frecuencia de palabras
-                    newWords.forEach(word => {
-                        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-                    });
-                    
-                    // Agregar palabras al conjunto (Set automáticamente elimina duplicados)
-                    newWords.forEach(word => wordsSet.add(word));
-                    
-                    // Actualizar la interfaz
-                    updateWordsList();
-                    updateFrequentWords();
-                    
-                    showMessage(`Análisis completado. Se extrajeron ${newWords.length} palabras. ${wordsSet.size} palabras únicas en total.`, 'success');
-                    loading.style.display = 'none';
-                    
-                }, 2000); // Simular un retraso de 2 segundos
+                setupProgressSteps(steps);
+                updateProgress(0, 'Iniciando...');
+                
+                // Obtener configuración
+                const depth = parseInt(depthSelect.value);
+                const pageLimit = parseInt(pageLimitInput.value);
+                const minLength = parseInt(minLengthInput.value);
+                const filterCommon = filterCommonCheckbox.checked;
+                const includeExternal = includeExternalCheckbox.checked;
+                const timeout = parseInt(timeoutInput.value) * 1000; // Convertir a milisegundos
+                
+                // Simular proceso de scraping con barra de progreso
+                await simulateScrapingProcess(url, depth, pageLimit, minLength, filterCommon, includeExternal, timeout);
+                
+                showMessage(`Análisis completado. Se analizaron ${pagesAnalyzed} páginas y se encontraron ${wordsSet.size} palabras únicas.`, 'success');
+                loading.style.display = 'none';
                 
             } catch (error) {
                 console.error('Error al extraer palabras:', error);
@@ -751,105 +989,34 @@
             }
         }
         
-        // Event Listeners
-        scrapeBtn.addEventListener('click', () => {
-            const url = urlInput.value.trim();
-            if (!url) {
-                showMessage('Por favor, ingresa una URL válida', 'error');
-                return;
-            }
+        // Función para simular el proceso de scraping con barra de progreso
+        async function simulateScrapingProcess(url, depth, pageLimit, minLength, filterCommon, includeExternal, timeout) {
+            // Paso 1: Conectando con el servidor
+            updateProgress(10, 'Conectando con el servidor...');
+            updateProgressStep(0, 'active');
+            await delay(1000);
+            updateProgressStep(0, 'completed');
             
-            // Validar formato de URL
-            try {
-                new URL(url);
-            } catch (e) {
-                showMessage('La URL ingresada no es válida', 'error');
-                return;
-            }
+            // Paso 2: Descargando contenido principal
+            updateProgress(25, 'Descargando contenido principal...');
+            updateProgressStep(1, 'active');
+            await delay(1500);
             
-            scrapeWords(url);
-        });
-        
-        sortAscBtn.addEventListener('click', () => {
-            const sorted = Array.from(wordsSet).sort();
-            updateWordsList(sorted);
-            showMessage('Palabras ordenadas alfabéticamente (A-Z)', 'info');
-        });
-        
-        sortDescBtn.addEventListener('click', () => {
-            const sorted = Array.from(wordsSet).sort().reverse();
-            updateWordsList(sorted);
-            showMessage('Palabras ordenadas alfabéticamente (Z-A)', 'info');
-        });
-        
-        sortLengthAscBtn.addEventListener('click', () => {
-            const sorted = Array.from(wordsSet).sort((a, b) => a.length - b.length);
-            updateWordsList(sorted);
-            showMessage('Palabras ordenadas por longitud (corto a largo)', 'info');
-        });
-        
-        sortLengthDescBtn.addEventListener('click', () => {
-            const sorted = Array.from(wordsSet).sort((a, b) => b.length - a.length);
-            updateWordsList(sorted);
-            showMessage('Palabras ordenadas por longitud (largo a corto)', 'info');
-        });
-        
-        filterShortBtn.addEventListener('click', () => {
-            const filtered = Array.from(wordsSet).filter(word => word.length < 5);
-            updateWordsList(filtered);
-            showMessage(`Mostrando ${filtered.length} palabras cortas (<5 letras)`, 'info');
-        });
-        
-        filterLongBtn.addEventListener('click', () => {
-            const filtered = Array.from(wordsSet).filter(word => word.length > 10);
-            updateWordsList(filtered);
-            showMessage(`Mostrando ${filtered.length} palabras largas (>10 letras)`, 'info');
-        });
-        
-        clearWordsBtn.addEventListener('click', () => {
-            if (wordsSet.size === 0) {
-                showMessage('No hay palabras para limpiar', 'info');
-                return;
-            }
+            // Simular datos de ejemplo para la página principal
+            const sampleText = `
+                El desarrollo web es el proceso de crear sitios web y aplicaciones para internet. 
+                Incluye diseño web, desarrollo de contenido web, scripting del lado del cliente y del servidor, 
+                y configuración de seguridad de red, entre otras tareas. El desarrollo web puede variar desde 
+                desarrollar una simple página de texto plano hasta complejas aplicaciones web, negocios 
+                electrónicos y servicios de redes sociales. Las tecnologías web fundamentales incluyen HTML, 
+                CSS y JavaScript, junto con frameworks y librerías modernas como React, Angular y Vue.
+            `;
             
-            if (confirm('¿Estás seguro de que quieres limpiar todas las palabras?')) {
-                wordsSet.clear();
-                wordFrequency = {};
-                totalWordsFromPage = 0;
-                updateWordsList();
-                updateFrequentWords();
-                showMessage('Todas las palabras han sido eliminadas', 'info');
-            }
-        });
-        
-        exportBtn.addEventListener('click', () => {
-            if (wordsSet.size === 0) {
-                showMessage('No hay palabras para exportar', 'error');
-                return;
-            }
+            processText(sampleText, minLength, filterCommon);
+            pagesAnalyzed = 1;
+            updateProgressStep(1, 'completed');
             
-            const content = Array.from(wordsSet).join('\n');
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'palabras_extraidas.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showMessage('Archivo exportado correctamente', 'success');
-        });
-        
-        // Inicializar la aplicación
-        updateStats();
-        updateWordsList();
-        updateFrequentWords();
-        
-        // Ejemplo de URL para probar
-        urlInput.value = 'https://ejemplo.com/articulo-interesante';
-    </script>
-</body>
-</html>
+            // Paso 3: Extrayendo enlaces internos
+            updateProgress(40, 'Extrayendo enlaces internos...');
+            updateProgressStep(2, 'active');
+            await delay(1200);
